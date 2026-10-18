@@ -5,6 +5,10 @@ by itself. Runs on Windows 7 and later with nothing to install: it uses .NET Fra
 which is part of Windows 7, or 4.x on newer Windows. Its text is in Ukrainian when Windows is
 set to Ukrainian, and in English otherwise.
 
+| The PC that sends | A receiving PC, first run only |
+|---|---|
+| ![The sending window](docs/send.png) | ![The first-run window](docs/first-run.png) |
+
 ## Build
 
 ```
