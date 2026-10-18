@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -6,16 +7,20 @@ using System.Text;
 namespace LanDrop;
 
 /// <summary>
-/// What travels from the sending PC to the other PCs. A message is a ping byte, or a link or a
-/// file followed by an HMAC-SHA256 over the whole message, keyed with the code typed at setup.
+/// What travels from the sending PC to the other PCs. A message is a ping byte, or a link, a
+/// file or the sending PC's clock followed by an HMAC-SHA256 over the whole message, keyed with
+/// the code typed at setup.
 /// </summary>
 public static class Wire
 {
     public const int Port = 17850;
 
-    internal const byte Ping = 0, Link = 1, File = 2;
+    internal const byte Ping = 0, Link = 1, File = 2, Time = 3;
 
     public static void WritePing(Stream s) => s.WriteByte(Ping);
+
+    public static void WriteTime(Stream s, string code) =>
+        Write(s, code, Time, DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture), Stream.Null, 0);
 
     public static void WriteLink(Stream s, string code, string url) =>
         Write(s, code, Link, url, Stream.Null, 0);
@@ -27,19 +32,20 @@ public static class Wire
     }
 
     /// <summary>
-    /// Reads one message and returns what to open: the link, or the path the file was saved to
+    /// Reads one message. Returns a string to open: the link, or the path the file was saved to
     /// in <paramref name="folder"/> (a file already there is kept, the new one gets a " (2)" name).
-    /// Returns null for a ping. Throws <see cref="InvalidDataException"/> when the message fails
-    /// the code check or is not a web link or a plain file name; nothing is saved then.
+    /// Returns a UTC <see cref="DateTime"/> for the sending PC's clock, and null for a ping.
+    /// Throws <see cref="InvalidDataException"/> when the message fails the code check or is not
+    /// a web link or a plain file name; nothing is saved then.
     /// </summary>
-    public static string Read(Stream s, string code, string folder)
+    public static object Read(Stream s, string code, string folder)
     {
         var r = new BinaryReader(s, Encoding.UTF8);
         var kind = r.ReadByte();
         if (kind == Ping) return null;
         var name = r.ReadString();
         var length = r.ReadInt64();
-        if (kind != Link && kind != File || length < 0) throw new InvalidDataException("Unknown message.");
+        if (kind is not (Link or File or Time) || length < 0) throw new InvalidDataException("Unknown message.");
 
         using var mac = new HMACSHA256(Encoding.UTF8.GetBytes(code));
         var header = Header(kind, name, length);
@@ -51,6 +57,7 @@ public static class Wire
             mac.TransformFinalBlock(new byte[0], 0, 0);
             if (!Same(r.ReadBytes(32), mac.Hash)) throw new InvalidDataException("Wrong code.");
             if (kind == File) return MoveInto(temp, folder, name);
+            if (kind == Time) return new DateTime(long.Parse(name, CultureInfo.InvariantCulture), DateTimeKind.Utc);
             if (!IsWebLink(name)) throw new InvalidDataException("Not a web link.");
             return new Uri(name).AbsoluteUri;
         }

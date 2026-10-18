@@ -52,6 +52,9 @@ public sealed class Sender
         }, false, out total);
     }
 
+    /// <summary>Sends this PC's clock to every connected PC; returns like <see cref="Send"/>.</summary>
+    public int SendTime(out int total) => ToAll(s => Wire.WriteTime(s, code), false, out total);
+
     void Accept()
     {
         while (true)

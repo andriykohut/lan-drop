@@ -32,6 +32,11 @@ The app is `LanDrop.exe` and `LanDrop.exe.config` in `src/LanDrop/bin/Release/ne
 Links open in the default browser. Files are saved to a `LAN Drop` folder on the desktop and
 opened with the program Windows uses for them.
 
+"Sync time" ("Синхронізувати час") sets the date and time on every connected PC to the sending
+PC's; time zones are left alone. A PC changes its clock only if the account signed in on it can
+do that without a prompt (an administrator with UAC off, for example); otherwise its clock
+stays as it was.
+
 To change the settings, delete `lan-drop.ini` beside the exe and run it again. To stop it
 starting with Windows, remove "LAN Drop" from startup: msconfig, Startup on Windows 7; Task
 Manager, Startup on Windows 8 and later.

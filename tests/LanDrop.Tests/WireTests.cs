@@ -46,8 +46,8 @@ public sealed class WireTests : IDisposable
             Wire.WriteFile(s, "1234", source);
             Wire.WriteFile(s, "1234", source);
             s.Position = 0;
-            var first = Wire.Read(s, "1234", folder);
-            var second = Wire.Read(s, "1234", folder);
+            var first = (string)Wire.Read(s, "1234", folder);
+            var second = (string)Wire.Read(s, "1234", folder);
             Assert.Equal(Path.Combine(folder, Path.GetFileName(source)), first);
             Assert.Equal(Path.Combine(folder, Path.GetFileNameWithoutExtension(source) + " (2).txt"), second);
             Assert.Equal("hello", File.ReadAllText(second));
@@ -56,6 +56,18 @@ public sealed class WireTests : IDisposable
         {
             File.Delete(source);
         }
+    }
+
+    [Fact]
+    public void The_time_arrives_as_the_sending_pcs_utc_clock()
+    {
+        var s = new MemoryStream();
+        var before = DateTime.UtcNow;
+        Wire.WriteTime(s, "1234");
+        s.Position = 0;
+        var time = Assert.IsType<DateTime>(Wire.Read(s, "1234", folder));
+        Assert.Equal(DateTimeKind.Utc, time.Kind);
+        Assert.InRange(time, before, DateTime.UtcNow);
     }
 
     [Fact]
@@ -98,7 +110,7 @@ public sealed class WireTests : IDisposable
             var sending = new Thread(() => reached = sender.Send(source, out total));
             sending.Start();
             string saved;
-            while ((saved = Wire.Read(client.GetStream(), "1234", folder)) == null) { }
+            while ((saved = (string)Wire.Read(client.GetStream(), "1234", folder)) == null) { }
             sending.Join();
             Assert.Equal(File.ReadAllBytes(source), File.ReadAllBytes(saved));
             Assert.Equal(1, reached);
