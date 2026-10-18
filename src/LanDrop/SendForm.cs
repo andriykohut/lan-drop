@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using static LanDrop.Lang;
 
 namespace LanDrop;
 
@@ -11,7 +12,7 @@ sealed class SendForm : Form
 {
     readonly Sender sender;
     readonly TextBox what = new() { Width = 360, Anchor = AnchorStyles.Left | AnchorStyles.Right };
-    readonly Button send = new() { Text = "Надіслати", AutoSize = true, Anchor = AnchorStyles.Right };
+    readonly Button send = new() { Text = T("Надіслати", "Send"), AutoSize = true, Anchor = AnchorStyles.Right };
     readonly Label status = new() { AutoSize = true, Margin = new Padding(3, 12, 3, 3) };
     Thread sending;
     volatile string note = "";
@@ -33,7 +34,7 @@ sealed class SendForm : Form
         AcceptButton = send;
 
         var grid = new TableLayoutPanel { ColumnCount = 2, AutoSize = true };
-        grid.Controls.Add(new Label { Text = "Посилання або файл:", AutoSize = true }, 0, 0);
+        grid.Controls.Add(new Label { Text = T("Посилання або файл:", "Link or file:"), AutoSize = true }, 0, 0);
         grid.Controls.Add(what, 0, 1);
         grid.Controls.Add(browse, 1, 1);
         grid.Controls.Add(send, 0, 2);
@@ -56,16 +57,16 @@ sealed class SendForm : Form
     void Send()
     {
         var text = what.Text.Trim().Trim('"');
-        if (!Wire.IsWebLink(text) && !CanRead(text)) note = "Вставте посилання (http… або https…) або виберіть файл";
-        else if (sender.Count == 0) note = "Немає підключених ПК";
+        if (!Wire.IsWebLink(text) && !CanRead(text)) note = T("Вставте посилання (http… або https…) або виберіть файл", "Paste a link (http… or https…) or choose a file");
+        else if (sender.Count == 0) note = T("Немає підключених ПК", "No PCs connected");
         else
         {
             send.Enabled = false;
-            note = "Надсилання…";
+            note = T("Надсилання…", "Sending…");
             sending = new Thread(() =>
             {
                 var reached = sender.Send(text, out var total);
-                note = $"Надіслано на {reached} з {total} ПК";
+                note = T($"Надіслано на {reached} з {total} ПК", $"Sent to {reached} of {total} PCs");
             }) { IsBackground = true };
             sending.Start();
         }
@@ -79,7 +80,7 @@ sealed class SendForm : Form
             sending = null;
             send.Enabled = true;
         }
-        status.Text = $"Підключено ПК: {sender.Count}" + (note.Length > 0 ? Environment.NewLine + note : "");
+        status.Text = T("Підключено ПК: ", "PCs connected: ") + sender.Count + (note.Length > 0 ? Environment.NewLine + note : "");
     }
 
     static bool CanRead(string path)

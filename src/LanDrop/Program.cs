@@ -6,6 +6,7 @@ using System.Security;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using static LanDrop.Lang;
 
 namespace LanDrop;
 
@@ -33,7 +34,7 @@ static class Program
             using var running = new Mutex(true, "LanDrop.Receiver", out var first);
             if (!first) return;
             StartWithWindows();
-            if (firstRun) MessageBox.Show("Готово. LAN Drop працює у фоні й запускатиметься разом із Windows.", "LAN Drop");
+            if (firstRun) MessageBox.Show(T("Готово. LAN Drop працює у фоні й запускатиметься разом із Windows.", "Done. LAN Drop runs in the background and will start with Windows."), "LAN Drop");
             Receiver.Run(host, code);
             return;
         }
@@ -45,7 +46,7 @@ static class Program
         }
         catch (SocketException)
         {
-            MessageBox.Show($"LAN Drop уже відкрито на цьому ПК, або порт {Wire.Port} зайняла інша програма.", "LAN Drop");
+            MessageBox.Show(T($"LAN Drop уже відкрито на цьому ПК, або порт {Wire.Port} зайняла інша програма.", $"LAN Drop is already open on this PC, or another program is using port {Wire.Port}."), "LAN Drop");
             return;
         }
         Application.Run(new SendForm(sender));
