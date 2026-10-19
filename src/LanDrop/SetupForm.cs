@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -7,8 +8,9 @@ using static LanDrop.Lang;
 namespace LanDrop;
 
 /// <summary>
-/// The first-run window: asks for the code and whether this PC sends or receives, and writes
-/// them to the settings file. <see cref="Form.DialogResult"/> is OK once they are saved.
+/// The settings window, shown on the first run and from the receiving PCs' tray icon: asks for
+/// the code and whether this PC sends or receives, starting from the current settings, and
+/// writes them to the settings file. <see cref="Form.DialogResult"/> is OK once they are saved.
 /// </summary>
 sealed class SetupForm : Form
 {
@@ -17,10 +19,11 @@ sealed class SetupForm : Form
     readonly RadioButton receives = new() { Text = T("Цей ПК отримує від ПК:", "This PC receives from PC:"), AutoSize = true, Anchor = AnchorStyles.Left };
     readonly TextBox host = new() { Width = 160, Enabled = false, Anchor = AnchorStyles.Left };
 
-    public SetupForm(string path)
+    public SetupForm(string path, Dictionary<string, string> settings)
     {
         this.path = path;
         Text = "LAN Drop";
+        Icon = Program.AppIcon;
         Font = SystemFonts.MessageBoxFont;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -33,6 +36,13 @@ sealed class SetupForm : Form
         var sends = new RadioButton { Text = T("Цей ПК надсилає", "This PC sends"), AutoSize = true, Checked = true, Margin = new Padding(3, 12, 3, 3) };
         var save = new Button { Text = T("Зберегти", "Save"), AutoSize = true, Anchor = AnchorStyles.Right, Margin = new Padding(3, 12, 3, 3) };
         receives.CheckedChanged += (_, _) => host.Enabled = receives.Checked;
+        if (settings.TryGetValue("code", out var c)) code.Text = c;
+        if (settings.TryGetValue("connect", out var h) && h.Length > 0)
+        {
+            sends.Checked = false;
+            receives.Checked = true;
+            host.Text = h;
+        }
         save.Click += (_, _) => Save();
         AcceptButton = save;
 

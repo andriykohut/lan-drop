@@ -17,7 +17,7 @@ public sealed class Sender
 {
     readonly string code;
     readonly TcpListener listener;
-    readonly List<TcpClient> clients = new();
+    readonly Dictionary<TcpClient, string> clients = new(); // each PC's name for the window
     Timer pings;
 
     public Sender(string code) : this(code, new IPEndPoint(IPAddress.Any, Wire.Port)) { }
@@ -29,6 +29,15 @@ public sealed class Sender
     }
 
     public int Count { get { lock (clients) return clients.Count; } }
+
+    /// <summary>
+    /// The connected PCs' names, sorted. A PC shows as its IP address until its name is found,
+    /// and for good when it cannot be.
+    /// </summary>
+    public string[] Names { get { lock (clients) return clients.Values.OrderBy(n => n).ToArray(); } }
+
+    /// <summary>A host name without its DNS suffix ("pc1.lan" is "pc1"); an IP address as it is.</summary>
+    internal static string Short(string host) => IPAddress.TryParse(host, out _) ? host : host.Split('.')[0];
 
     /// <summary>Starts listening. Throws <see cref="SocketException"/> when the port is taken.</summary>
     public void Start()
@@ -61,15 +70,28 @@ public sealed class Sender
         {
             var c = listener.AcceptTcpClient();
             c.SendTimeout = 30000;
-            lock (clients) clients.Add(c);
+            var ip = ((IPEndPoint)c.Client.RemoteEndPoint).Address;
+            lock (clients) clients[c] = ip.ToString();
+            // A failed lookup can take seconds, so it runs aside and other PCs connect meanwhile.
+            new Thread(() =>
+            {
+                var name = NameOf(ip);
+                lock (clients) if (clients.ContainsKey(c)) clients[c] = name;
+            }) { IsBackground = true }.Start();
         }
+    }
+
+    static string NameOf(IPAddress ip)
+    {
+        try { return Short(Dns.GetHostEntry(ip).HostName); }
+        catch (SocketException) { return ip.ToString(); }
     }
 
     // A ping skips a PC that is busy receiving a file rather than waiting for it to finish.
     int ToAll(Action<Stream> write, bool skipBusy, out int total)
     {
         TcpClient[] snapshot;
-        lock (clients) snapshot = clients.ToArray();
+        lock (clients) snapshot = clients.Keys.ToArray();
         total = snapshot.Length;
         var reached = 0;
         var threads = snapshot.Select(c => new Thread(() =>

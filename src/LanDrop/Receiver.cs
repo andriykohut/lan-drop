@@ -16,6 +16,9 @@ namespace LanDrop;
 /// </summary>
 static class Receiver
 {
+    /// <summary>Whether this PC is connected to the sending PC right now.</summary>
+    public static volatile bool Connected;
+
     public static void Run(string host, string code)
     {
         var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "LAN Drop");
@@ -25,6 +28,7 @@ static class Receiver
             {
                 using var c = new TcpClient(host, Wire.Port);
                 c.ReceiveTimeout = 30000; // three missed pings: the sending PC is gone
+                Connected = true;
                 var s = c.GetStream();
                 while (true)
                 {
@@ -41,6 +45,7 @@ static class Receiver
                 }
             }
             catch (Exception) { } // sending PC off or restarting, or a message failed the code check
+            Connected = false;
             Thread.Sleep(5000);
         }
     }

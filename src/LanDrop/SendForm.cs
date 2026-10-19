@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using static LanDrop.Lang;
@@ -8,8 +9,8 @@ using static LanDrop.Lang;
 namespace LanDrop;
 
 /// <summary>
-/// The sending PC's window: one box for a link or a file and a button that sends it, and a
-/// button that sets every PC's clock to this one's.
+/// The sending PC's window: one box for a link or a file and a button that sends it, a
+/// button that sets every PC's clock to this one's, and the list of connected PCs.
 /// </summary>
 sealed class SendForm : Form
 {
@@ -18,6 +19,7 @@ sealed class SendForm : Form
     readonly Button send = new() { Text = T("Надіслати", "Send"), AutoSize = true, Anchor = AnchorStyles.Right };
     readonly Button clock = new() { Text = T("Синхронізувати час", "Sync time"), AutoSize = true, Anchor = AnchorStyles.Left };
     readonly Label status = new() { AutoSize = true, Margin = new Padding(3, 12, 3, 3) };
+    readonly ListBox pcs = new() { Height = 120, Anchor = AnchorStyles.Left | AnchorStyles.Right, AccessibleName = T("Підключені ПК", "Connected PCs") };
     Thread sending;
     volatile string note = "";
 
@@ -25,6 +27,7 @@ sealed class SendForm : Form
     {
         this.sender = sender;
         Text = "LAN Drop";
+        Icon = Program.AppIcon;
         Font = SystemFonts.MessageBoxFont;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -46,6 +49,8 @@ sealed class SendForm : Form
         grid.Controls.Add(send, 1, 2);
         grid.Controls.Add(status, 0, 3);
         grid.SetColumnSpan(status, 2);
+        grid.Controls.Add(pcs, 0, 4);
+        grid.SetColumnSpan(pcs, 2);
         Controls.Add(grid);
 
         var timer = new System.Windows.Forms.Timer { Interval = 500, Enabled = true };
@@ -102,7 +107,14 @@ sealed class SendForm : Form
             sending = null;
             send.Enabled = clock.Enabled = true;
         }
-        status.Text = T("Підключено ПК: ", "PCs connected: ") + sender.Count + (note.Length > 0 ? Environment.NewLine + note : "");
+        var names = sender.Names;
+        status.Text = T("Підключено ПК: ", "PCs connected: ") + names.Length + (note.Length > 0 ? Environment.NewLine + note : "");
+        // Refilled only on a change, so the list keeps its scroll position between ticks.
+        if (!names.SequenceEqual(pcs.Items.Cast<string>()))
+        {
+            pcs.Items.Clear();
+            pcs.Items.AddRange(names);
+        }
     }
 
     static bool CanRead(string path)

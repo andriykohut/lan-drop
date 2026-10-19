@@ -95,6 +95,13 @@ public sealed class WireTests : IDisposable
         Assert.Throws<InvalidDataException>(() => Wire.Read(Message(Wire.Link, link, ""), "1234", folder));
     }
 
+    [Theory]
+    [InlineData("pc1.lan", "pc1")]
+    [InlineData("pc1", "pc1")]
+    [InlineData("192.168.1.5", "192.168.1.5")]
+    public void A_pc_shows_by_its_short_name_or_its_ip(string host, string shown) =>
+        Assert.Equal(shown, Sender.Short(host));
+
     [Fact]
     public void The_sender_reaches_a_connected_pc()
     {
@@ -106,6 +113,7 @@ public sealed class WireTests : IDisposable
         {
             using var client = new TcpClient("127.0.0.1", 17851);
             Assert.True(SpinWait.SpinUntil(() => sender.Count == 1, 5000));
+            Assert.Single(sender.Names);
             int reached = 0, total = 0;
             var sending = new Thread(() => reached = sender.Send(source, out total));
             sending.Start();

@@ -6,9 +6,11 @@
     <TargetFramework>net35</TargetFramework>
     <LangVersion>latest</LangVersion>
     <RootNamespace>LanDrop</RootNamespace>
+    <ApplicationIcon>LanDrop.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="LanDrop.ico" />
     <Reference Include="System.Windows.Forms" />
     <InternalsVisibleTo Include="LanDrop.Tests" />
   </ItemGroup>

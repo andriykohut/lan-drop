@@ -37,7 +37,15 @@ PC's; time zones are left alone. A PC changes its clock only if the account sign
 do that without a prompt (an administrator with UAC off, for example); otherwise its clock
 stays as it was.
 
-To change the settings, delete `lan-drop.ini` beside the exe and run it again. To stop it
+The sending window lists the connected PCs by name, or by IP address when Windows cannot find a
+PC's name. On the other PCs, the LAN Drop icon by the clock (a blue square with a white arrow) shows
+while the PC is connected to the sending PC, and a warning sign while it is not; point at it to
+read which.
+Windows may hide the icon behind the arrow next to the clock.
+
+To change the settings on a receiving PC, right-click its icon by the clock and choose "Open
+settings" ("Відкрити налаштування"); "Close" ("Закрити") stops LAN Drop on that PC until the next
+sign-in. On the sending PC, delete `lan-drop.ini` beside the exe and run it again. To stop it
 starting with Windows, remove "LAN Drop" from startup: msconfig, Startup on Windows 7; Task
 Manager, Startup on Windows 8 and later.
 
@@ -45,6 +53,8 @@ Manager, Startup on Windows 8 and later.
 
 - The code stops casual misuse only. Anyone who can read `lan-drop.ini` on a receiving PC can
   send to every PC.
+- Anyone at a receiving PC can close LAN Drop there, or see and change its settings, from the
+  icon by the clock.
 - Nothing is encrypted on the network.
 - Starting with Windows is per Windows user: on a PC with several accounts, run it once under
   each.
